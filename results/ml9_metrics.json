@@ -1,8 +1,8 @@
 {
-    "sharpe": 0.796581143111902,
-    "annual_return": 0.1483996046755946,
-    "annual_volatility": 0.18629565356752084,
-    "max_drawdown": -0.28374011831216545,
-    "win_rate": 0.49171974522292994,
+    "sharpe": 0.9555945116342723,
+    "annual_return": 0.1742596226141791,
+    "annual_volatility": 0.1823572870004848,
+    "max_drawdown": -0.258206406537961,
+    "win_rate": 0.513375796178344,
     "num_trades": 785
 }

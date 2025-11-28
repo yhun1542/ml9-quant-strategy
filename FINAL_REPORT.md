@@ -7,22 +7,22 @@ This report presents the backtesting results for the ML9 (with/without Guard) an
 
 | Metric | Value |
 |---|---|
-| Sharpe Ratio | 0.80 |
-| Annualized Return | 14.84% |
-| Annualized Volatility | 18.63% |
-| Max Drawdown | -28.37% |
-| Win Rate | 49.17% |
+| Sharpe Ratio | 0.96 |
+| Annualized Return | 17.43% |
+| Annualized Volatility | 18.24% |
+| Max Drawdown | -25.82% |
+| Win Rate | 51.34% |
 | Number of Trades | 785 |
 
 ## ML9 Engine Results (With Guard)
 
 | Metric | Value | Change |
 |---|---|---|
-| Sharpe Ratio | 0.91 | +14.4% |
-| Annualized Return | 14.32% | -0.52% |
-| Annualized Volatility | 15.71% | -2.92% |
-| Max Drawdown | -24.53% | -13.5% |
-| Win Rate | 49.17% | +0.00% |
+| Sharpe Ratio | 1.11 | +16.6% |
+| Annualized Return | 17.18% | -0.25% |
+| Annualized Volatility | 15.42% | -2.81% |
+| Max Drawdown | -22.20% | -14.0% |
+| Win Rate | 51.34% | +0.00% |
 | Number of Trades | 785 | +0 |
 
 **Guard Configuration:**
@@ -34,10 +34,10 @@ This report presents the backtesting results for the ML9 (with/without Guard) an
 
 | Metric | Value |
 |---|---|
-| Sharpe Ratio | 0.81 |
-| Annualized Return | 13.42% |
-| Annualized Volatility | 16.59% |
-| Max Drawdown | -31.11% |
-| Win Rate | 54.25% |
+| Sharpe Ratio | 0.77 |
+| Annualized Return | 12.12% |
+| Annualized Volatility | 15.82% |
+| Max Drawdown | -36.63% |
+| Win Rate | 53.18% |
 | Number of Trades | 2516 |
 
