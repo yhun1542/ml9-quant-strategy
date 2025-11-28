@@ -1,0 +1,70 @@
+{
+    "full_period": {
+        "ml9_no_guard": {
+            "sharpe": 0.9055233166333222,
+            "annual_return": 0.16752391382761275,
+            "annual_volatility": 0.18500231937754621,
+            "max_drawdown": -0.22537104115449574,
+            "win_rate": 0.4966887417218543,
+            "num_trades": 755
+        },
+        "ml9_guarded_with_costs": {
+            "sharpe": -0.2883741292945916,
+            "annual_return": -0.038924606280861786,
+            "annual_volatility": 0.13497953639626928,
+            "max_drawdown": -0.21432747474740899,
+            "win_rate": 0.4198675496688742,
+            "num_trades": 755
+        }
+    },
+    "train_period": {
+        "ml9_no_guard": {
+            "sharpe": 0.6866973136976616,
+            "annual_return": 0.13219464196051398,
+            "annual_volatility": 0.19250787694025623,
+            "max_drawdown": -0.22537104115449574,
+            "win_rate": 0.4831013916500994,
+            "num_trades": 503
+        },
+        "ml9_guarded_with_costs": {
+            "sharpe": -0.4157559739622805,
+            "annual_return": -0.05809164526264447,
+            "annual_volatility": 0.13972534106729362,
+            "max_drawdown": -0.21432747474740899,
+            "win_rate": 0.4115308151093439,
+            "num_trades": 503
+        }
+    },
+    "test_period": {
+        "ml9_no_guard": {
+            "sharpe": 1.4090365785715315,
+            "annual_return": 0.23804226203852827,
+            "annual_volatility": 0.16893973205426177,
+            "max_drawdown": -0.09986480255525194,
+            "win_rate": 0.5238095238095238,
+            "num_trades": 252
+        },
+        "ml9_guarded_with_costs": {
+            "sharpe": -0.005335515178124193,
+            "annual_return": -0.0006665879957954892,
+            "annual_volatility": 0.12493413916776479,
+            "max_drawdown": -0.11850726521144712,
+            "win_rate": 0.4365079365079365,
+            "num_trades": 252
+        }
+    },
+    "guard_config": {
+        "return_lower": -0.03,
+        "return_upper": 0.0,
+        "scale_factor": 0.3
+    },
+    "transaction_costs": {
+        "slippage_bps": 8.5,
+        "commission_pct": 0.1,
+        "total_cost_pct": 55.50000000000001
+    },
+    "guard_stats": {
+        "active_days": 299,
+        "active_rate": 39.602649006622514
+    }
+}
