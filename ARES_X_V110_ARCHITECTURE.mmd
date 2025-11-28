@@ -1,0 +1,118 @@
+graph TB
+    subgraph "🎯 ARES-X V110 Trading System Architecture"
+        direction TB
+        
+        subgraph "🧠 AI/ML Layer"
+            direction LR
+            MuZero[MuZero Agent<br/>- MCTS Planning<br/>- Self-Play Learning<br/>- Value/Policy Networks]
+            TFT[Temporal Fusion Transformer<br/>- Multi-Horizon Forecasting<br/>- Attention Mechanisms<br/>- Variable Selection]
+            RL[Reinforcement Learning<br/>- DQN, PPO, SAC, TD3<br/>- A3C, Rainbow, TRPO<br/>- DDPG, EfficientZero]
+            
+            MuZero --> |Predictions| TFT
+            TFT --> |Features| RL
+        end
+        
+        subgraph "📊 Portfolio Management"
+            direction LR
+            PO[Portfolio Optimizer<br/>- Black-Litterman<br/>- HRP<br/>- MPC<br/>- Quantum Optimization]
+            RM[Risk Manager<br/>- CVaR<br/>- EVT<br/>- Dynamic Sizing<br/>- Real-time Monitoring]
+            PM[Position Manager<br/>- Entry/Exit Logic<br/>- Rebalancing<br/>- Multi-Asset Support]
+            
+            PO --> |Weights| PM
+            RM --> |Risk Limits| PM
+        end
+        
+        subgraph "📈 Data & Indicators"
+            direction LR
+            DS[Data Sources<br/>- 17+ APIs<br/>- Real-time Feeds<br/>- Historical Data]
+            TI[Technical Indicators<br/>- 50+ Indicators<br/>- Custom Features<br/>- Market Microstructure]
+            FE[Feature Engineering<br/>- AutoML Pipeline<br/>- Preprocessing<br/>- Selection]
+            
+            DS --> |Raw Data| TI
+            TI --> |Features| FE
+        end
+        
+        subgraph "⚙️ Execution Layer"
+            direction LR
+            OM[Order Manager<br/>- Order Routing<br/>- Fill Tracking<br/>- Cancellation]
+            EX[Exchange Adapters<br/>- IBKR<br/>- Kiwoom<br/>- Binance]
+            CB[Circuit Breaker<br/>- Rate Limiting<br/>- Error Handling<br/>- Failsafe]
+            
+            OM --> |Orders| EX
+            CB --> |Control| OM
+        end
+        
+        subgraph "🏗️ Infrastructure"
+            direction LR
+            GPU[GPU Management<br/>- Memory Optimization<br/>- CUDA Support<br/>- 679 GPU Ops]
+            DT[Distributed Training<br/>- Multi-GPU<br/>- Async Processing<br/>- 223 Async Functions]
+            MON[Monitoring<br/>- TensorBoard<br/>- Wandb<br/>- Prometheus]
+            
+            GPU --> |Resources| DT
+            DT --> |Metrics| MON
+        end
+        
+        subgraph "🎪 Event System"
+            direction LR
+            EB[Event Bus<br/>- Pub/Sub Pattern<br/>- Loose Coupling<br/>- Async Events]
+            ORC[System Orchestrator<br/>- ARES7UltimateSystem<br/>- Lifecycle Management<br/>- Configuration]
+            
+            EB --> |Events| ORC
+        end
+        
+        %% Layer Connections
+        FE --> |Processed Features| MuZero
+        FE --> |Processed Features| TFT
+        
+        MuZero --> |Actions| PO
+        TFT --> |Forecasts| PO
+        RL --> |Policies| PO
+        
+        PM --> |Orders| OM
+        RM --> |Risk Alerts| EB
+        
+        EX --> |Fills| PM
+        EX --> |Market Data| DS
+        
+        ORC --> |Control| MuZero
+        ORC --> |Control| TFT
+        ORC --> |Control| PO
+        ORC --> |Control| OM
+        
+        MON --> |Feedback| ORC
+        
+    end
+    
+    %% External Connections
+    Market[🌐 Financial Markets] --> |Data| DS
+    EX --> |Orders| Market
+    Market --> |Fills| EX
+    
+    User[👤 User/Config] --> |Settings| ORC
+    ORC --> |Reports| User
+    
+    style MuZero fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style TFT fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    style RL fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    
+    style PO fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    style RM fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    style PM fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    
+    style DS fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    style TI fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    style FE fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    
+    style OM fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style EX fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    style CB fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    
+    style GPU fill:#fce4ec,stroke:#880e4f,stroke-width:3px
+    style DT fill:#fce4ec,stroke:#880e4f,stroke-width:3px
+    style MON fill:#fce4ec,stroke:#880e4f,stroke-width:3px
+    
+    style EB fill:#e0f2f1,stroke:#004d40,stroke-width:3px
+    style ORC fill:#e0f2f1,stroke:#004d40,stroke-width:3px
+    
+    style Market fill:#ffebee,stroke:#b71c1c,stroke-width:4px
+    style User fill:#e3f2fd,stroke:#0d47a1,stroke-width:4px
