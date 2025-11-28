@@ -1,3 +1,8 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c94fc8bc2f9db9c5788dbb6e693a918b75d081e90db9b9c61183c9475b89bc15
-size 224
+{
+    "sharpe": 0.809043005722212,
+    "annual_return": 0.13422162592107917,
+    "annual_volatility": 0.16590171965118589,
+    "max_drawdown": -0.3111353366707543,
+    "win_rate": 0.5425278219395866,
+    "num_trades": 2516
+}

@@ -1,0 +1,16 @@
+{
+    "w_ml9": 1.0,
+    "w_qv": 0.0,
+    "min_sharpe": -0.00393533394494843,
+    "mean_sharpe": 1.1526151855014068,
+    "window_sharpes": [
+        -0.00393533394494843,
+        2.1648099603613176,
+        1.2969709300878516
+    ],
+    "overall_sharpe": 1.026722177753864,
+    "overall_annual_return": 0.15918219133364117,
+    "overall_annual_volatility": 0.1550392061091739,
+    "overall_max_drawdown": -0.1838013180729951,
+    "overall_win_rate": 0.4966887417218543
+}

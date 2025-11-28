@@ -60,6 +60,8 @@ class ML9MarketConditionGuard:
             return
 
         spx_close = spx_close.sort_index().dropna()
+        # Normalize index to remove timezone and time component
+        spx_close.index = pd.to_datetime(spx_close.index).normalize()
         self.spx_close = spx_close
 
         spx_ret = spx_close.pct_change().dropna()

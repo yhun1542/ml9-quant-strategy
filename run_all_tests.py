@@ -17,9 +17,13 @@ import requests
 import nasdaqdatalink
 import xgboost as xgb
 from sklearn.preprocessing import StandardScaler
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 import warnings
 warnings.filterwarnings('ignore')
+
+# Import MarketConditionGuard
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from modules.market_guard_ml9 import ML9MarketConditionGuard
 
 # --- Setup ---
 BASE_DIR = Path(__file__).resolve().parent
@@ -82,6 +86,23 @@ class Polygon:
         df["date"] = pd.to_datetime(df["t"], unit="ms")
         return df[["date", "ticker", "c"]].rename(columns={"c": "close"})
 
+    def get_spy_prices(self, start_date: str, end_date: str) -> pd.Series:
+        """Download SPY prices for MarketConditionGuard"""
+        print(f"Downloading SPY prices for Guard... ", end="")
+        try:
+            data = self._get_prices_for_ticker("SPY", start_date, end_date)
+            if not data.empty:
+                data["date"] = pd.to_datetime(data["date"]).dt.tz_localize(None)
+                spy_series = data.set_index("date")["close"]
+                print(f"✓ {len(spy_series)} days")
+                return spy_series
+            else:
+                print("✗ No data")
+                return pd.Series(dtype=float)
+        except Exception as e:
+            print(f"✗ Error: {e}")
+            return pd.Series(dtype=float)
+
 class SF1:
     def __init__(self, api_key: str):
         self.api_key = api_key
@@ -133,7 +154,7 @@ def calculate_metrics(returns: pd.Series) -> PerformanceMetrics:
 
 #<editor-fold desc="Trading Engines">
 class ML9Engine:
-    def __init__(self, prices: pd.DataFrame, factors: pd.DataFrame, top_quantile: float = 0.2, prediction_horizon: int = 10):
+    def __init__(self, prices: pd.DataFrame, factors: pd.DataFrame, top_quantile: float = 0.2, prediction_horizon: int = 10, guard: Optional[ML9MarketConditionGuard] = None):
         prices["date"] = pd.to_datetime(prices["date"])
         self.prices_pivot = prices.pivot(index='date', columns='ticker', values='close')
         self.factors = factors.copy()
@@ -150,6 +171,7 @@ class ML9Engine:
             "learning_rate": 0.05, "n_estimators": 200, "subsample": 0.7,
             "colsample_bytree": 0.7, "reg_alpha": 1.0, "reg_lambda": 3.0, "random_state": 42,
         }
+        self.guard = guard  # MarketConditionGuard instance
 
     def _apply_cross_sectional_ranking(self):
         all_ranks = []
@@ -243,7 +265,14 @@ class ML9Engine:
                             probas = model.predict_proba(scaler.transform(X_test))[:, 2]
                             predictions = pd.Series(probas, index=X_test.index)
                             long_tickers = predictions.nlargest(int(len(predictions) * self.top_quantile)).index.get_level_values("ticker")
-                            portfolio = {ticker: 1.0 / len(long_tickers) for ticker in long_tickers} if len(long_tickers) > 0 else {}
+                            
+                            # Apply MarketConditionGuard scale factor
+                            guard_scale = 1.0
+                            if self.guard is not None:
+                                guard_scale = self.guard.get_ml9_scale(date)
+                            
+                            base_weight = 1.0 / len(long_tickers) if len(long_tickers) > 0 else 0.0
+                            portfolio = {ticker: base_weight * guard_scale for ticker in long_tickers} if len(long_tickers) > 0 else {}
             
             if not portfolio:
                 daily_returns[date] = 0.0
@@ -408,6 +437,7 @@ def download_and_prepare_data():
     prices_path = BASE_DIR / "data" / "sp100_prices_raw.csv"
     sf1_path = BASE_DIR / "data" / "sp100_sf1_raw.csv"
     merged_path = BASE_DIR / "data" / "sp100_merged_data.csv"
+    spy_path = BASE_DIR / "data" / "spy_prices.csv"
 
     # 이미 머지된 데이터가 있으면 그대로 사용
     if merged_path.exists():
@@ -418,7 +448,22 @@ def download_and_prepare_data():
         print("  Fundamental non-null counts after reload:")
         for col in ["pe", "pb", "ps", "evebitda", "roe", "ebitdamargin", "de", "currentratio"]:
             print(f"    {col}: {data[col].notna().sum()} non-null")
-        return data
+        
+        # SPY 데이터 로딩
+        if spy_path.exists():
+            print(f"✓ Loading previously downloaded SPY prices from {spy_path}")
+            spy_df = pd.read_csv(spy_path, parse_dates=['date'], index_col='date')
+            spy_df.index = spy_df.index.tz_localize(None)  # Remove timezone
+            spy_series = spy_df['close']
+        else:
+            print("\nDownloading SPY prices for MarketConditionGuard...")
+            poly = Polygon(POLYGON_API_KEY)
+            spy_series = poly.get_spy_prices("2014-01-01", "2024-12-31")
+            spy_df = pd.DataFrame({'close': spy_series})
+            spy_df.to_csv(spy_path)
+            print(f"✓ Saved SPY prices to {spy_path}")
+        
+        return data, spy_series
 
     # --- 1) 가격 데이터 로딩 or 다운로드 ---
     if prices_path.exists():
@@ -533,27 +578,70 @@ def download_and_prepare_data():
     # 최종 저장
     data.to_csv(merged_path, index=False)
     print(f"\n✓ Saved merged and prepared data to {merged_path}")
-    return data
+    
+    # --    # SPY 데이터 로딩 (MarketConditionGuard용)
+    if spy_path.exists():
+        print(f"✓ Loading previously downloaded SPY prices from {spy_path}")
+        spy_df = pd.read_csv(spy_path, parse_dates=['date'], index_col='date')
+        spy_df.index = spy_df.index.tz_localize(None)  # Remove timezone
+        spy_series = spy_df['close']
+    else:
+        print("\nDownloading SPY prices for MarketConditionGuard...")
+        poly = Polygon(POLYGON_API_KEY)
+        spy_series = poly.get_spy_prices("2014-01-01", "2024-12-31")
+        spy_df = pd.DataFrame({'close': spy_series})
+        spy_df.to_csv(spy_path)
+        print(f"✓ Saved SPY prices to {spy_path}")
+    
+    return data, spy_series
 
-def run_backtests(data):
+def run_backtests(data, spy_series):
     print("\n" + "="*100)
     print("STEP 2: RUNNING BACKTESTS")
     print("="*100)
     prices_for_engines = data[["date", "ticker", "close"]]
+    
+    # --- ML9 Engine (No Guard) ---
+    print("\n[1/3] ML9 Engine (No Guard)")
     ml9_engine = ML9Engine(prices=prices_for_engines.copy(), factors=data.copy())
     ml9_returns, ml9_metrics = ml9_engine.run_walk_forward_backtest(start_date="2015-01-01", end_date="2024-12-31")
     ml9_returns.to_csv(BASE_DIR / "results" / "ml9_returns.csv")
     with open(BASE_DIR / "results" / "ml9_metrics.json", "w") as f:
         json.dump(asdict(ml9_metrics), f, indent=4)
-    print("\n✓ ML9 Engine backtest complete.")
-    print("Starting QV Engine Backtest...")
+    print("✓ ML9 Engine (No Guard) backtest complete.")
+    
+    # --- ML9 Engine (With Guard) ---
+    print("\n[2/3] ML9 Engine (With Guard)")
+    guard_config = {
+        "enabled": True,
+        "spx_symbol": "SPY",
+        "return_lower": -0.02,
+        "return_upper": 0.0,
+        "scale_factor": 0.5,
+        "vol_window": 20,
+        "use_vol_filter": False,
+    }
+    guard = ML9MarketConditionGuard(guard_config)
+    guard.initialize(spy_series)
+    
+    ml9_guard_engine = ML9Engine(prices=prices_for_engines.copy(), factors=data.copy(), guard=guard)
+    ml9_guard_returns, ml9_guard_metrics = ml9_guard_engine.run_walk_forward_backtest(start_date="2015-01-01", end_date="2024-12-31")
+    ml9_guard_returns.to_csv(BASE_DIR / "results" / "ml9_guard_returns.csv")
+    with open(BASE_DIR / "results" / "ml9_guard_metrics.json", "w") as f:
+        json.dump(asdict(ml9_guard_metrics), f, indent=4)
+    print("✓ ML9 Engine (With Guard) backtest complete.")
+    
+    # --- QV Engine ---
+    print("\n[3/3] QV Engine")
     qv_engine = QVEngine()
     qv_returns, qv_metrics = qv_engine.run_backtest(prices=prices_for_engines.copy(), fund_daily=data.copy(), start_date="2015-01-01", end_date="2024-12-31")
     qv_returns.to_csv(BASE_DIR / "results" / "qv_returns.csv")
     with open(BASE_DIR / "results" / "qv_metrics.json", "w") as f:
         json.dump(asdict(qv_metrics), f, indent=4)
-    print("\n✓ QV Engine backtest complete.")
-    print("Loading backtest results...")
+    print("✓ QV Engine backtest complete.")
+    
+    print("\n✓ All backtests complete.")
+    return ml9_metrics, ml9_guard_metrics, qv_metrics
 
 def generate_report():
     print("\n" + "="*100)
@@ -562,14 +650,21 @@ def generate_report():
     try:
         with open(BASE_DIR / "results" / "ml9_metrics.json", "r") as f:
             ml9_metrics = json.load(f)
+        with open(BASE_DIR / "results" / "ml9_guard_metrics.json", "r") as f:
+            ml9_guard_metrics = json.load(f)
         with open(BASE_DIR / "results" / "qv_metrics.json", "r") as f:
             qv_metrics = json.load(f)
+        
+        # Calculate Guard improvement
+        sharpe_improvement = ((ml9_guard_metrics["sharpe"] - ml9_metrics["sharpe"]) / ml9_metrics["sharpe"] * 100) if ml9_metrics["sharpe"] != 0 else 0
+        mdd_improvement = ((ml9_guard_metrics["max_drawdown"] - ml9_metrics["max_drawdown"]) / ml9_metrics["max_drawdown"] * 100) if ml9_metrics["max_drawdown"] != 0 else 0
+        
         report = f'''# Quantitative Strategy Analysis Report
 
 ## Overview
-This report presents the backtesting results for the ML9 and QV quantitative trading strategies from 2015 to 2024 on the SP100 universe.
+This report presents the backtesting results for the ML9 (with/without Guard) and QV quantitative trading strategies from 2015 to 2024 on the SP100 universe.
 
-## ML9 Engine Results
+## ML9 Engine Results (No Guard)
 
 | Metric | Value |
 |---|---|
@@ -579,6 +674,22 @@ This report presents the backtesting results for the ML9 and QV quantitative tra
 | Max Drawdown | {ml9_metrics["max_drawdown"]*100:.2f}% |
 | Win Rate | {ml9_metrics["win_rate"]*100:.2f}% |
 | Number of Trades | {ml9_metrics["num_trades"]} |
+
+## ML9 Engine Results (With Guard)
+
+| Metric | Value | Change |
+|---|---|---|
+| Sharpe Ratio | {ml9_guard_metrics["sharpe"]:.2f} | {sharpe_improvement:+.1f}% |
+| Annualized Return | {ml9_guard_metrics["annual_return"]*100:.2f}% | {(ml9_guard_metrics["annual_return"] - ml9_metrics["annual_return"])*100:+.2f}% |
+| Annualized Volatility | {ml9_guard_metrics["annual_volatility"]*100:.2f}% | {(ml9_guard_metrics["annual_volatility"] - ml9_metrics["annual_volatility"])*100:+.2f}% |
+| Max Drawdown | {ml9_guard_metrics["max_drawdown"]*100:.2f}% | {mdd_improvement:+.1f}% |
+| Win Rate | {ml9_guard_metrics["win_rate"]*100:.2f}% | {(ml9_guard_metrics["win_rate"] - ml9_metrics["win_rate"])*100:+.2f}% |
+| Number of Trades | {ml9_guard_metrics["num_trades"]} | {ml9_guard_metrics["num_trades"] - ml9_metrics["num_trades"]:+d} |
+
+**Guard Configuration:**
+- SPX Return Range: -2.0% to 0.0%
+- Scale Factor: 0.5 (50% position reduction)
+- Volatility Filter: Disabled
 
 ## QV Engine Results
 
@@ -603,8 +714,8 @@ This report presents the backtesting results for the ML9 and QV quantitative tra
 def main():
     start_time = time.time()
     try:
-        data = download_and_prepare_data()
-        run_backtests(data)
+        data, spy_series = download_and_prepare_data()
+        run_backtests(data, spy_series)
         generate_report()
     except Exception as e:
         print(f"An error occurred during the main execution: {e}")
